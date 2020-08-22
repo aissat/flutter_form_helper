@@ -21,7 +21,19 @@ class QuickForm extends StatefulWidget {
       this.uiBuilder = scrollableSimpleForm,
       this.onFormChanged,
       this.onFormSubmitted})
-      : super(key: key);
+      : controller = null,
+        super(key: key);
+
+  const QuickForm.withController({
+    @required this.controller,
+    Key key,
+    this.uiBuilder = scrollableSimpleForm,
+  })  : onFormChanged = null,
+        onFormSubmitted = null,
+        form = null,
+        super(key: key);
+
+  final QuickFormController controller;
 
   /// The list of fields in order of focus/drawing
   final List<Field> form;
@@ -40,23 +52,27 @@ class QuickForm extends StatefulWidget {
 }
 
 class _QuickFormState extends State<QuickForm> {
-  QuickFormController helper;
+  QuickFormController controller;
 
   @override
   void initState() {
-    helper = QuickFormController(
-        spec: widget.form,
-        onChanged: widget.onFormChanged,
-        onSubmitted: widget.onFormSubmitted)
+    controller = widget.controller ??
+        QuickFormController(
+            spec: widget.form,
+            onChanged: widget.onFormChanged,
+            onSubmitted: widget.onFormSubmitted)
       ..addListener(_refresh);
     super.initState();
   }
 
   @override
   void dispose() {
-    helper
-      ..removeListener(_refresh)
-      ..dispose();
+    controller.removeListener(_refresh);
+    if (widget.controller == null) {
+      //this means we have no custom controller
+      // so we dispose this controller
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -64,7 +80,7 @@ class _QuickFormState extends State<QuickForm> {
 
   @override
   Widget build(BuildContext context) =>
-      helper.buildForm(context, builder: widget.uiBuilder);
+      controller.buildForm(context, builder: widget.uiBuilder);
 }
 
 ///
