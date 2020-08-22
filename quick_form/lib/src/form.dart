@@ -79,8 +79,7 @@ class _QuickFormState extends State<QuickForm> {
   void _refresh() => setState(() {});
 
   @override
-  Widget build(BuildContext context) =>
-      controller.buildForm(context, builder: widget.uiBuilder);
+  Widget build(BuildContext context) => widget.uiBuilder(controller, context);
 }
 
 ///
