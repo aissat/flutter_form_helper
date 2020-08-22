@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../quick_form.dart';
 
 /// Builds a form
@@ -9,12 +10,12 @@ import '../quick_form.dart';
 ///
 /// Optionally you can provide uiBuilder to build a specific form UI
 ///
-class FormBuilder extends StatefulWidget {
+class QuickForm extends StatefulWidget {
   /// Construct a form
   ///
   /// form = List of fields
   /// uiBuilder = builds the ui
-  const FormBuilder(
+  const QuickForm(
       {@required this.form,
       Key key,
       this.uiBuilder = scrollableSimpleForm,
@@ -35,15 +36,15 @@ class FormBuilder extends StatefulWidget {
   final FormResultsCallback onFormSubmitted;
 
   @override
-  _FormBuilderState createState() => _FormBuilderState();
+  _QuickFormState createState() => _QuickFormState();
 }
 
-class _FormBuilderState extends State<FormBuilder> {
-  FormHelper helper;
+class _QuickFormState extends State<QuickForm> {
+  QuickFormController helper;
 
   @override
   void initState() {
-    helper = FormHelper(
+    helper = QuickFormController(
         spec: widget.form,
         onChanged: widget.onFormChanged,
         onSubmitted: widget.onFormSubmitted)
@@ -73,7 +74,8 @@ class _FormBuilderState extends State<FormBuilder> {
 ///
 /// It's assumed you'll implement your own form however.
 ///
-Widget scrollableSimpleForm(FormHelper helper, BuildContext context) => Column(
+Widget scrollableSimpleForm(QuickFormController helper, BuildContext context) =>
+    Column(
       children: <Widget>[
         Expanded(
           child: Card(

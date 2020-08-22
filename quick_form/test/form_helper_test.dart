@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:quick_form/quick_form.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:quick_form/quick_form.dart';
 
 void main() {
   test("Basic Form Helper Test", () {
     Map<String, String> results;
-    FormHelper(
+    QuickFormController(
         spec: [const Field(name: "test")], onSubmitted: (map) => results = map)
       ..onChange("test", "value")
       ..submitForm();
@@ -17,7 +17,7 @@ void main() {
   test("Basic Form Helper Test with LengthValidator", () {
     /// Test Validation Fail
     Map<String, String> results;
-    FormHelper(spec: [
+    QuickFormController(spec: [
       const Field(name: "test", validators: [lengthValidator])
     ], onSubmitted: (map) => results = map)
       ..onChange("test", "va")
@@ -26,7 +26,7 @@ void main() {
     expect(results, isNull);
 
     /// Test validation Pass
-    FormHelper(spec: [
+    QuickFormController(spec: [
       const Field(name: "test", validators: [lengthValidator])
     ], onSubmitted: (map) => results = map)
       ..onChange("test", "value")
@@ -41,7 +41,7 @@ void main() {
     Map<String, String> onSubmittedMap;
     await tester.pumpWidget(
       MaterialApp(
-        home: FormBuilder(
+        home: QuickForm(
           form: sampleForm,
           onFormSubmitted: (map) => onSubmittedMap = map,
         ),
@@ -55,18 +55,14 @@ void main() {
     await tester.tap(find.byKey(const Key("title")));
     await tester.enterText(find.byKey(const Key("title")), "Test Title");
     await tester.testTextInput.receiveAction(TextInputAction.done);
-    
 
-    
     await tester.tap(find.byKey(const Key("age")));
     await tester.enterText(find.byKey(const Key("age")), "34");
     await tester.testTextInput.receiveAction(TextInputAction.done);
-    
-
 
     await tester.tap(find.byKey(const Key("submit")));
     expect(onSubmittedMap["age"], equals("34"));
-    expect(onSubmittedMap["title"], equals("Test Title"));        
+    expect(onSubmittedMap["title"], equals("Test Title"));
   });
 }
 

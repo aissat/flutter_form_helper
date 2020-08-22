@@ -5,7 +5,7 @@ import '../quick_form.dart';
 /// Composes and folds together multiple validators
 /// Applies the list of Validators in order
 String compositeValidator(
-        List<Validator> validators, FormHelper helper, String input) =>
+        List<Validator> validators, QuickFormController helper, String input) =>
     input != null && input.isNotEmpty
         ? validators.fold(
             null, (output, v) => v(helper, input, defaultOutput: output))
@@ -16,7 +16,7 @@ String compositeValidator(
 /// By default validates at least 3 characters entered
 /// Can be customized as necessary
 String lengthValidator(
-  FormHelper helper,
+  QuickFormController helper,
   String input, {
   int minLength = 3,
   int maxLength = 100000,
@@ -31,7 +31,7 @@ String lengthValidator(
 /// Ensures the correct amount of spaces in a string
 /// By default, no spaces, but can be configured to allow
 /// as many words as you want.
-String spaceCountValidator(FormHelper helper, String input,
+String spaceCountValidator(QuickFormController helper, String input,
         {String defaultOutput,
         int count = 0,
         String message = "No Spaces Allowed"}) =>
@@ -42,7 +42,7 @@ String spaceCountValidator(FormHelper helper, String input,
 /// Email Validator
 ///
 /// Validates an email address against a regex
-String emailValidator(FormHelper helper, String input,
+String emailValidator(QuickFormController helper, String input,
         {String defaultOutput}) =>
     input == null || !_emailPattern.hasMatch(input)
         ? "Please enter a email"
@@ -51,7 +51,8 @@ String emailValidator(FormHelper helper, String input,
 /// URL Validator
 ///
 /// Validates that a URL was entered correctly
-String urlValidator(FormHelper helper, String input, {String defaultOutput}) =>
+String urlValidator(QuickFormController helper, String input,
+        {String defaultOutput}) =>
     input == null || !_urlPattern.hasMatch(input)
         ? "Please enter a URL"
         : defaultOutput;
@@ -59,7 +60,7 @@ String urlValidator(FormHelper helper, String input, {String defaultOutput}) =>
 /// Double Validator
 ///
 /// Validates that text can be parsed to a double
-String doubleValidator(FormHelper helper, String input,
+String doubleValidator(QuickFormController helper, String input,
     {String defaultOutput}) {
   try {
     double.parse(input);
@@ -72,7 +73,8 @@ String doubleValidator(FormHelper helper, String input,
 /// Int Validator
 ///
 /// Validates that text can be parsed to an Int
-String intValidator(FormHelper helper, String input, {String defaultOutput}) {
+String intValidator(QuickFormController helper, String input,
+    {String defaultOutput}) {
   try {
     int.parse(input);
   } on Exception {

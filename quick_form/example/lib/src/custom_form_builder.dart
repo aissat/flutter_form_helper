@@ -6,7 +6,8 @@ import 'package:quick_form/quick_form.dart';
 /// For each field, we use helper.getField(name) to inject the fields in
 /// the righ places in the UI
 ///
-Widget customFormBuilder(FormHelper helper, BuildContext context) => Column(
+Widget customFormBuilder(QuickFormController helper, BuildContext context) =>
+    Column(
       children: <Widget>[
         Expanded(
           child: Card(

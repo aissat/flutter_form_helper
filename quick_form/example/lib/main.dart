@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_form/quick_form.dart';
+
 import 'src/custom_form_builder.dart';
 import 'src/sample_form.dart';
 
@@ -37,7 +38,7 @@ class _FormTestAppState extends State<FormTestApp>
 
   @override
   void initState() {
-    controller = TabController(length: 3, vsync: this);    
+    controller = TabController(length: 3, vsync: this);
     super.initState();
   }
 
@@ -55,7 +56,8 @@ class _FormTestAppState extends State<FormTestApp>
             body: SafeArea(
                 child: Column(
               children: <Widget>[
-                TabBar(onTap: (_)=>setChangedString(null),
+                TabBar(
+                  onTap: (_) => setChangedString(null),
                   labelColor: Theme.of(context).colorScheme.primary,
                   controller: controller,
                   tabs: const <Widget>[
@@ -68,18 +70,18 @@ class _FormTestAppState extends State<FormTestApp>
                     child:
                         TabBarView(controller: controller, children: <Widget>[
                   /// Simple Form Builder Widget with default UI
-                  FormBuilder(
+                  QuickForm(
                       form: sampleForm,
                       onFormSubmitted: resultsCallback,
                       onFormChanged: (map) => setChangedString(map.toString())),
 
                   /// Simple Form Builder with custom form UI, Extension Syntax
-                  
-                  sampleForm.buildSimpleForm(                      
+
+                  sampleForm.buildSimpleForm(
                       onFormSubmitted: resultsCallback,
                       onFormChanged: (map) => setChangedString(map.toString()),
                       uiBuilder: customFormBuilder),
-                      
+
                   /// Unvalidated form using ExtensionSyntax
                   ["Name", "Title", "Address"].buildSimpleForm(
                       onFormSubmitted: resultsCallback,

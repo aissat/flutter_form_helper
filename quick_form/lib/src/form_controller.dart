@@ -56,13 +56,13 @@ class Field {
 }
 
 /// Specifies a Form
-class FormHelper extends ChangeNotifier {
+class QuickFormController extends ChangeNotifier {
   /// Construct a FormHelper
-  factory FormHelper(
+  factory QuickFormController(
           {List<Field> spec,
           FormResultsCallback onChanged,
           FormResultsCallback onSubmitted}) =>
-      FormHelper._(
+      QuickFormController._(
           onChanged: onChanged,
           onSubmitted: onSubmitted,
           controllers: spec.fold(
@@ -82,7 +82,7 @@ class FormHelper extends ChangeNotifier {
           fields: spec);
 
   /// Private Constructor - Init from Factory
-  FormHelper._(
+  QuickFormController._(
       {@required this.fields,
       @required this.controllers,
       @required this.focusNodes,
@@ -310,7 +310,7 @@ class _TextField extends StatelessWidget {
       : super(key: key);
 
   /// The Form Helper
-  final FormHelper formHelper;
+  final QuickFormController formHelper;
 
   /// The name of the field
   final String name;
@@ -338,7 +338,7 @@ class _RadioButton extends StatelessWidget {
   const _RadioButton({Key key, this.formHelper, this.name}) : super(key: key);
 
   /// The Form Helper
-  final FormHelper formHelper;
+  final QuickFormController formHelper;
 
   /// The name of the field
   final String name;
@@ -357,7 +357,7 @@ class _CheckBox extends StatelessWidget {
   const _CheckBox({Key key, this.formHelper, this.name}) : super(key: key);
 
   /// The Form Helper
-  final FormHelper formHelper;
+  final QuickFormController formHelper;
 
   /// The name of the field
   final String name;
@@ -379,7 +379,7 @@ extension FormHelperStringListExtension on List<String> {
           {FormUiBuilder uiBuilder = scrollableSimpleForm,
           FormResultsCallback onFormChanged,
           FormResultsCallback onFormSubmitted}) =>
-      FormBuilder(
+      QuickForm(
           onFormChanged: onFormChanged,
           onFormSubmitted: onFormSubmitted,
           form: map((string) => Field(name: string)).toList());
@@ -393,7 +393,7 @@ extension FormHelperFieldListExtension on List<Field> {
           {FormUiBuilder uiBuilder = scrollableSimpleForm,
           FormResultsCallback onFormChanged,
           FormResultsCallback onFormSubmitted}) =>
-      FormBuilder(
+      QuickForm(
           uiBuilder: uiBuilder,
           onFormChanged: onFormChanged,
           onFormSubmitted: onFormSubmitted,

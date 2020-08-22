@@ -7,7 +7,7 @@ import '../quick_form.dart';
 /// Define functions like this to build a form and access the FormHelper
 /// to get the widgets
 typedef FormUiBuilder = Widget Function(
-    FormHelper helper, BuildContext context);
+    QuickFormController helper, BuildContext context);
 
 /// Form Results Callback
 ///
@@ -28,5 +28,5 @@ typedef FormResultsCallback = Function(Map<String, String> results);
 ///
 /// e.g. permitBlank can clear a length validation error put before it
 /// so a field can be blank, but require X characters if you do type.
-typedef Validator = String Function(FormHelper helper, String input,
+typedef Validator = String Function(QuickFormController helper, String input,
     {String defaultOutput});
