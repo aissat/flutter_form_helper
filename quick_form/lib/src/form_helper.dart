@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../quick_form.dart';
 
 /// The types of fields we support
@@ -65,15 +66,19 @@ class FormHelper extends ChangeNotifier {
           onChanged: onChanged,
           onSubmitted: onSubmitted,
           controllers: spec.fold(
-              <String, TextEditingController>{},
-              (p, v) => <String, TextEditingController>{}
-                ..addAll(p)
-                ..putIfAbsent(v.name, () => TextEditingController())),
-          focusNodes: spec.fold(
-              <String, FocusNode>{},
-              (p, v) => <String, FocusNode>{}
-                ..addAll(p)
-                ..putIfAbsent(v.name, () => FocusNode())),
+            <String, TextEditingController>{},
+            (map, field) {
+              if (field.type == FieldType.text) {
+                assert(!map.containsKey(field.name));
+                map[field.name] = TextEditingController();
+              }
+              return map;
+            },
+          ),
+          focusNodes: spec.fold(<String, FocusNode>{}, (map, field) {
+            map[field.name] = FocusNode();
+            return map;
+          }),
           fields: spec);
 
   /// Private Constructor - Init from Factory
