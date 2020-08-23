@@ -36,7 +36,7 @@ class QuickForm extends StatefulWidget {
   final QuickFormController controller;
 
   /// The list of fields in order of focus/drawing
-  final List<Field> form;
+  final List<FieldBase> form;
 
   /// A builder for the UI, scrollable SimpleForm to start
   final FormUiBuilder uiBuilder;
@@ -101,7 +101,7 @@ Widget scrollableSimpleForm(QuickFormController helper, BuildContext context) =>
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: helper.fields.map((f) {
-                      if (f.type != FieldType.text) {
+                      if (f is FieldRadioButton) {
                         return Row(children: <Widget>[
                           Text("${f.group ?? ""} ${f.value}"),
                           helper.getWidget(f.name)

@@ -6,7 +6,8 @@ void main() {
   test("Basic Form Helper Test", () {
     Map<String, String> results;
     QuickFormController(
-        spec: [const Field(name: "test")], onSubmitted: (map) => results = map)
+        spec: [const FieldText(name: "test")],
+        onSubmitted: (map) => results = map)
       ..onChange("test", "value")
       ..submitForm();
 
@@ -18,7 +19,7 @@ void main() {
     /// Test Validation Fail
     Map<String, String> results;
     QuickFormController(spec: [
-      const Field(name: "test", validators: [lengthValidator])
+      const FieldText(name: "test", validators: [lengthValidator])
     ], onSubmitted: (map) => results = map)
       ..onChange("test", "va")
       ..submitForm();
@@ -27,7 +28,7 @@ void main() {
 
     /// Test validation Pass
     QuickFormController(spec: [
-      const Field(name: "test", validators: [lengthValidator])
+      const FieldText(name: "test", validators: [lengthValidator])
     ], onSubmitted: (map) => results = map)
       ..onChange("test", "value")
       ..submitForm();
@@ -67,27 +68,39 @@ void main() {
 }
 
 /// This is the Sample Form used on the main() page
-const sampleForm = <Field>[
-  Field(
+const sampleForm = <FieldBase>[
+  FieldText(
       name: "name",
       label: "Name",
       mandatory: true,
       validators: [lengthValidator]),
-  Field(name: "title", label: "Title", mandatory: false),
-  Field(
+  FieldText(name: "title", label: "Title", mandatory: false),
+  FieldText(
       name: "email",
       label: "Email",
       mandatory: false,
       validators: [emailValidator]),
-  Field(
+  FieldText(
       name: "url", label: "Url", mandatory: false, validators: [urlValidator]),
-  Field(name: "age", label: "Age", mandatory: true, validators: [intValidator]),
-  Field(name: "radio1", group: "Pronoun", value: "He", type: FieldType.radio),
-  Field(name: "radio2", group: "Pronoun", value: "She", type: FieldType.radio),
-  Field(
-      name: "radio3",
-      group: "Pronoun",
-      value: "Unspecified",
-      type: FieldType.radio),
-  Field(name: "checkbox", value: "checked", type: FieldType.checkbox)
+  FieldText(
+      name: "age", label: "Age", mandatory: true, validators: [intValidator]),
+  FieldRadioButton(
+    name: "radio1",
+    group: "Pronoun",
+    value: "He",
+  ),
+  FieldRadioButton(
+    name: "radio2",
+    group: "Pronoun",
+    value: "She",
+  ),
+  FieldRadioButton(
+    name: "radio3",
+    group: "Pronoun",
+    value: "Unspecified",
+  ),
+  FieldCheckbox(
+    name: "checkbox",
+    value: "checked",
+  )
 ];

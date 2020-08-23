@@ -6,7 +6,8 @@ import 'package:quick_form/quick_form.dart';
 /// For each field, we use helper.getField(name) to inject the fields in
 /// the righ places in the UI
 ///
-Widget customFormBuilder(QuickFormController helper, BuildContext context) =>
+Widget customFormBuilder(
+        QuickFormController controller, BuildContext context) =>
     Column(
       children: <Widget>[
         Expanded(
@@ -18,25 +19,25 @@ Widget customFormBuilder(QuickFormController helper, BuildContext context) =>
                 child: Column(mainAxisSize: MainAxisSize.max, children: [
                   Row(
                     children: <Widget>[
-                      Expanded(flex: 3, child: helper.getWidget("name")),
+                      Expanded(flex: 3, child: controller.getWidget("name")),
                       Container(width: 16),
-                      Expanded(flex: 3, child: helper.getWidget("title")),
+                      Expanded(flex: 3, child: controller.getWidget("title")),
                       Container(width: 16),
-                      Expanded(child: helper.getWidget("age"))
+                      Expanded(child: controller.getWidget("age"))
                     ],
                   ),
                   Row(
                     children: <Widget>[
-                      Expanded(child: helper.getWidget("password")),
+                      Expanded(child: controller.getWidget("password")),
                       Container(width: 16),
-                      Expanded(child: helper.getWidget("repeat_password"))
+                      Expanded(child: controller.getWidget("repeat_password"))
                     ],
                   ),
                   Row(
                     children: <Widget>[
-                      Expanded(child: helper.getWidget("email")),
+                      Expanded(child: controller.getWidget("email")),
                       Container(width: 16),
-                      Expanded(child: helper.getWidget("url"))
+                      Expanded(child: controller.getWidget("url"))
                     ],
                   ),
                   Padding(
@@ -80,9 +81,12 @@ Widget customFormBuilder(QuickFormController helper, BuildContext context) =>
                                       MainAxisAlignment.spaceEvenly,
                                   mainAxisSize: MainAxisSize.max,
                                   children: <Widget>[
-                                    Expanded(child: helper.getWidget("radio1")),
-                                    Expanded(child: helper.getWidget("radio2")),
-                                    Expanded(child: helper.getWidget("radio3")),
+                                    Expanded(
+                                        child: controller.getWidget("radio1")),
+                                    Expanded(
+                                        child: controller.getWidget("radio2")),
+                                    Expanded(
+                                        child: controller.getWidget("radio3")),
                                   ],
                                 )
                               ],
@@ -93,7 +97,7 @@ Widget customFormBuilder(QuickFormController helper, BuildContext context) =>
                   Row(
                     children: <Widget>[
                       const Text("Accept Terms"),
-                      helper.getWidget("checkbox")
+                      controller.getWidget("checkbox")
                     ],
                   )
                 ]),
@@ -101,6 +105,6 @@ Widget customFormBuilder(QuickFormController helper, BuildContext context) =>
             ),
           ),
         ),
-        helper.getWidget("submit")
+        controller.getWidget("submit")
       ],
     );

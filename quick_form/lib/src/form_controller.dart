@@ -2,64 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../quick_form.dart';
 
-/// The types of fields we support
-enum FieldType {
-  /// Text Fields
-  text,
-
-  /// Radio Buttons
-  radio,
-
-  /// Checkboxes
-  checkbox
-}
-
-/// Metadata to define a field
-class Field {
-  /// Build a FieldSpec
-  const Field(
-      {@required this.name, // Name of this field
-      this.validators = const [], // A list of validators
-      this.mandatory = false, // Is this field mandatory?
-      this.obscureText = false, // Password Field
-      this.value = "", // Default Value
-      this.group, // Group (for Radio)
-      this.type = FieldType.text, // FieldType (text/radio/checkbox)
-      this.label // Label to be displayed as hint
-      });
-
-  /// The name of this field
-  final String name;
-
-  /// The group (for RadioGroups)
-  final String group;
-
-  /// The type of the field
-  final FieldType type;
-
-  /// The label for this field (name is default)
-  final String label;
-
-  /// Is the field Required
-  final bool mandatory;
-
-  /// Should this field be masked if possible?
-  final bool obscureText;
-
-  /// The value of this field
-  final String value;
-
-  /// The Validator for this field
-  /// Null if OK
-  /// Text if Error
-  final List<Validator> validators;
-}
-
 /// Specifies a Form
 class QuickFormController extends ChangeNotifier {
   /// Construct a FormHelper
   factory QuickFormController(
-          {List<Field> spec,
+          {List<FieldBase> spec,
           FormResultsCallback onChanged,
           FormResultsCallback onSubmitted}) =>
       QuickFormController._(
@@ -68,7 +15,7 @@ class QuickFormController extends ChangeNotifier {
           controllers: spec.fold(
             <String, TextEditingController>{},
             (map, field) {
-              if (field.type == FieldType.text) {
+              if (field is FieldText) {
                 assert(!map.containsKey(field.name));
                 map[field.name] = TextEditingController();
               }
@@ -101,7 +48,7 @@ class QuickFormController extends ChangeNotifier {
   final bool allowWithErrors;
 
   /// All the fields
-  final List<Field> fields;
+  final List<FieldBase> fields;
 
   /// All the controllers
   final Map<String, TextEditingController> controllers;
@@ -165,16 +112,7 @@ class QuickFormController extends ChangeNotifier {
           child: Text(submissionButtonText));
     }
 
-    switch (_getFieldSpec(name).type) {
-      case FieldType.text:
-        return _TextField._(formHelper: this, name: name);
-      case FieldType.radio:
-        return _RadioButton(formHelper: this, name: name);
-      case FieldType.checkbox:
-        return _CheckBox(formHelper: this, name: name);
-    }
-
-    return const Text("Uknown Type");
+    return getFieldSpec(name).buildWidget(this);
   }
 
   /// Call this when you want to "Submit" the form
@@ -208,7 +146,7 @@ class QuickFormController extends ChangeNotifier {
     final field = fields.firstWhere(
         (field) => field.mandatory && (getValue(field.name)?.isEmpty ?? true));
     if (field != null) {
-      _getFocusNode(field.name).requestFocus();
+      getFocusNode(field.name).requestFocus();
     }
   }
 
@@ -219,22 +157,22 @@ class QuickFormController extends ChangeNotifier {
         compositeValidator(field.validators, this, getValue(field.name)) !=
         null);
     if (field != null) {
-      _getFocusNode(field.name).requestFocus();
+      getFocusNode(field.name).requestFocus();
     }
   }
 
   /// Gets a field spec
-  Field _getFieldSpec(String name) =>
+  FieldBase getFieldSpec(String name) =>
       fields.firstWhere((element) => element.name == name);
 
   /// Gets a field spec
-  int _getFieldSpecIndex(Field fieldSpec) => fields.indexOf(fieldSpec);
+  int _getFieldSpecIndex(FieldBase fieldSpec) => fields.indexOf(fieldSpec);
 
   /// Get a focus node for a named field
-  FocusNode _getFocusNode(String name) => focusNodes[name];
+  FocusNode getFocusNode(String name) => focusNodes[name];
 
   /// Get a text editting controller for a name
-  TextEditingController _getTextEditingController(String name) =>
+  TextEditingController getTextEditingController(String name) =>
       controllers[name];
 
   /// Called every time a value is changed
@@ -249,18 +187,18 @@ class QuickFormController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _onSubmit(String name) {
-    final spec = _getFieldSpec(name);
+  void onSubmit(String name) {
+    final spec = getFieldSpec(name);
     final idx = _getFieldSpecIndex(spec);
-    if (spec.type == FieldType.text) {
-      values[name] = _getTextEditingController(name).text;
+    if (spec is FieldText) {
+      values[name] = getTextEditingController(name).text;
     }
 
     if (idx + 1 < fields.length) {
       final nextField = fields[idx + 1];
-      _getFocusNode(nextField.name).requestFocus();
+      getFocusNode(nextField.name).requestFocus();
     } else {
-      _getFocusNode(name).unfocus();
+      getFocusNode(name).unfocus();
     }
   }
 
@@ -268,106 +206,37 @@ class QuickFormController extends ChangeNotifier {
   /// Radio buttons get value by Group name
   /// and default to a value = to the first option listed
   String getValue(String name) {
-    final field = _getFieldSpec(name);
+    final field = getFieldSpec(name);
 
-    if (field.type == FieldType.radio) {
+    if (field is FieldRadioButton) {
       if (values.containsKey(field.group)) {
         return values[field.group];
       } else {
-        return _getRadioDefaultValue(field.group);
+        return getRadioDefaultValue(field.group);
       }
     }
 
     return values[field.name];
   }
 
-  String _getRadioDefaultValue(String group) =>
-      fields.firstWhere((element) => element.group == group).value;
+  String getRadioDefaultValue(String group) => (fields.firstWhere((element) =>
+              element is FieldRadioButton && element.group == group)
+          as FieldRadioButton)
+      .value;
 
-  void _applyRadioValue(String name, String value) =>
-      onChange(_getFieldSpec(name).group, value);
+  void applyRadioValue(String name, String value) =>
+      onChange((getFieldSpec(name) as FieldRadioButton).group, value);
 
-  void _toggleCheckbox(String name) {
+  void toggleCheckbox(String name) {
     if (values.containsKey(name)) {
       values.remove(name);
     } else {
-      values[name] = _getFieldSpec(name).value;
+      values[name] = getFieldSpec(name).value as String;
     }
     notifyListeners();
   }
 
-  bool _isChecked(String name) => values.containsKey(name);
-}
-
-/// Field Bindings for the helper
-///
-/// When you call getWidget(String name) on FormHelper
-/// one of these following widgets will be put in it's place
-///
-class _TextField extends StatelessWidget {
-  /// Construct a text form helper
-  const _TextField._({@required this.formHelper, @required this.name, Key key})
-      : super(key: key);
-
-  /// The Form Helper
-  final QuickFormController formHelper;
-
-  /// The name of the field
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final fieldSpec = formHelper._getFieldSpec(name);
-    final label = fieldSpec.label ?? name;
-
-    return TextFormField(
-        key: Key(name),
-        obscureText: fieldSpec.obscureText,
-        onChanged: (value) => formHelper.onChange(name, value),
-        onFieldSubmitted: (value) => formHelper._onSubmit(name),
-        focusNode: formHelper._getFocusNode(name),
-        controller: formHelper._getTextEditingController(name),
-        decoration: InputDecoration(
-            labelText: fieldSpec.mandatory ? "* $label" : label,
-            errorText: compositeValidator(fieldSpec.validators, formHelper,
-                formHelper._getTextEditingController(name).text)));
-  }
-}
-
-class _RadioButton extends StatelessWidget {
-  const _RadioButton({Key key, this.formHelper, this.name}) : super(key: key);
-
-  /// The Form Helper
-  final QuickFormController formHelper;
-
-  /// The name of the field
-  final String name;
-
-  @override
-  Widget build(BuildContext context) => Radio<String>(
-      key: Key(name),
-      groupValue: formHelper._getFieldSpec(name).value,
-      value: formHelper.getValue(name),
-      focusNode: formHelper._getFocusNode(name),
-      onChanged: (value) => formHelper._applyRadioValue(
-          name, formHelper._getFieldSpec(name).value));
-}
-
-class _CheckBox extends StatelessWidget {
-  const _CheckBox({Key key, this.formHelper, this.name}) : super(key: key);
-
-  /// The Form Helper
-  final QuickFormController formHelper;
-
-  /// The name of the field
-  final String name;
-
-  @override
-  Widget build(BuildContext context) => Checkbox(
-      key: Key(name),
-      focusNode: formHelper._getFocusNode(name),
-      value: formHelper._isChecked(name),
-      onChanged: (value) => formHelper._toggleCheckbox(name));
+  bool isChecked(String name) => values.containsKey(name);
 }
 
 /// Extensions on List<String> to help with building the ultimate simple form
@@ -382,12 +251,12 @@ extension FormHelperStringListExtension on List<String> {
       QuickForm(
           onFormChanged: onFormChanged,
           onFormSubmitted: onFormSubmitted,
-          form: map((string) => Field(name: string)).toList());
+          form: map((string) => FieldText(name: string)).toList());
 }
 
 /// Extensions on List<Field> to help with building the ultimate simple form
 
-extension FormHelperFieldListExtension on List<Field> {
+extension FormHelperFieldListExtension on List<FieldBase> {
   /// Extension Syntax for building out of a List<Field>
   Widget buildSimpleForm(
           {FormUiBuilder uiBuilder = scrollableSimpleForm,
