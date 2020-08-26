@@ -103,7 +103,7 @@ Widget scrollableSimpleForm(QuickFormController helper, BuildContext context) =>
                     children: helper.fields.map((f) {
                       if (f is FieldRadioButton) {
                         return Row(children: <Widget>[
-                          Text("${f.group ?? ""} ${f.value}"),
+                          Text("${f.group ?? ""} ${f.label}"),
                           helper.getWidget(f.name)
                         ]);
                       } else {

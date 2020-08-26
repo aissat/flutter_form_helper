@@ -101,6 +101,6 @@ const sampleForm = <FieldBase>[
   ),
   FieldCheckbox(
     name: "checkbox",
-    value: "checked",
+    initialValue: "checked",
   )
 ];

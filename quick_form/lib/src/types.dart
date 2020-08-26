@@ -12,7 +12,7 @@ typedef FormUiBuilder = Widget Function(
 /// Form Results Callback
 ///
 /// This function is used to return the results of the form to the callbacks
-typedef FormResultsCallback = Function(Map<String, String> results);
+typedef FormResultsCallback = Function(Map<String, Object> results);
 
 ///
 /// This is a Validator.

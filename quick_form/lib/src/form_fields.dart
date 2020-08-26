@@ -10,9 +10,13 @@ abstract class FieldBase<T> {
       {@required this.name, // Name of this field
       this.validators = const [], // A list of validators
       this.mandatory = false, // Is this field mandatory?
-      this.value = null, // Default Value
+      // ignore: avoid_init_to_null
+      this.initialValue = null, // Default Value
       this.label // Label to be displayed as hint
       });
+
+  // The key of the field value in the result map
+  String get valueKey => name;
 
   /// The name of this field
   final String name;
@@ -24,7 +28,7 @@ abstract class FieldBase<T> {
   final bool mandatory;
 
   /// The value of this field
-  final T value;
+  final T initialValue;
 
   /// The Validator for this field
   /// Null if OK
@@ -39,14 +43,14 @@ class FieldText extends FieldBase<String> {
     @required String name, // Name of this field
     List<Validator> validators = const [], // A list of validators
     bool mandatory = false, // Is this field mandatory?
-    String value = '', // Default Value
+    String initialValue = '', // Default Value
     String label, // Label to be displayed as hint
     this.obscureText = false,
   }) : super(
             name: name,
             validators: validators,
             mandatory: mandatory,
-            value: value,
+            initialValue: initialValue,
             label: label);
 
   /// Should this field be masked if possible?
@@ -67,55 +71,58 @@ class FieldText extends FieldBase<String> {
 }
 
 class FieldRadioButton extends FieldBase<String> {
-  /// The group (for RadioGroups)
-  final String group;
-
   const FieldRadioButton({
-    @required String name, // Name of this field
-    List<Validator> validators = const [], // A list of validators
+    @required String name, // Name of radio button group
+    @required this.value, // Value for this RadioButton
+    String initialValue, // initial value for the group
     bool mandatory = false, // Is this field mandatory?
-    String value = '', // Default Value
-    String label, // Label to be displayed as hint
+    String label, // Label to be displayed
     this.group,
   }) : super(
             name: name,
-            validators: validators,
+            validators: const [],
             mandatory: mandatory,
-            value: value,
+            initialValue: initialValue,
             label: label);
 
   @override
-  Widget buildWidget(QuickFormController controller) => Radio<String>(
-      key: Key(name),
-      groupValue: value,
-      value: controller.getValue(name),
-      focusNode: controller.getFocusNode(name),
-      onChanged: (value) => controller.applyRadioValue(
-          name, controller.getFieldSpec(name).value as String));
-}
+  String get valueKey => group;
 
-class FieldCheckbox extends FieldBase<String> {
+  final String value;
+
   /// The group (for RadioGroups)
   final String group;
 
+  @override
+  // ignore: prefer_expression_function_bodies
+  Widget buildWidget(QuickFormController controller) {
+    return Radio<String>(
+        key: Key(name),
+        groupValue: controller.getValue(valueKey) as String,
+        value: value,
+        focusNode: controller.getFocusNode(name),
+        onChanged: (value) => controller.onChange(valueKey, value));
+  }
+}
+
+class FieldCheckbox extends FieldBase<bool> {
   const FieldCheckbox({
     @required String name, // Name of this field
     List<Validator> validators = const [], // A list of validators
     bool mandatory = false, // Is this field mandatory?
-    String value = '', // Default Value
+    bool initialValue = false, // Default Value
     String label, // Label to be displayed as hint
-    this.group,
   }) : super(
             name: name,
             validators: validators,
             mandatory: mandatory,
-            value: value,
+            initialValue: initialValue,
             label: label);
 
   @override
   Widget buildWidget(QuickFormController controller) => Checkbox(
       key: Key(name),
       focusNode: controller.getFocusNode(name),
-      value: controller.isChecked(name),
-      onChanged: (value) => controller.toggleCheckbox(name));
+      value: controller.getValue(valueKey) as bool ?? false,
+      onChanged: (value) => controller.onChange(valueKey, value));
 }

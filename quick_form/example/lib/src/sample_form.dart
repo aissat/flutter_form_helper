@@ -26,23 +26,27 @@ const sampleForm = <FieldBase>[
   FieldText(
       name: "age", label: "Age", mandatory: true, validators: [intValidator]),
   FieldRadioButton(
+    initialValue: 'He',
     name: "radio1",
     group: "Pronoun",
     value: "He",
+    label: "He",
   ),
   FieldRadioButton(
     name: "radio2",
     group: "Pronoun",
     value: "She",
+    label: "She",
   ),
   FieldRadioButton(
     name: "radio3",
     group: "Pronoun",
     value: "Unspecified",
+    label: "Unspecified",
   ),
   FieldCheckbox(
     name: "checkbox",
-    value: "checked",
+    initialValue: true,
   )
 ];
 

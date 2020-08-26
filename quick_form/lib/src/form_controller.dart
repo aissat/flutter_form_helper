@@ -17,7 +17,8 @@ class QuickFormController extends ChangeNotifier {
             (map, field) {
               if (field is FieldText) {
                 assert(!map.containsKey(field.name));
-                map[field.name] = TextEditingController();
+                map[field.name] =
+                    TextEditingController(text: field.initialValue);
               }
               return map;
             },
@@ -35,7 +36,15 @@ class QuickFormController extends ChangeNotifier {
       @required this.focusNodes,
       this.onChanged,
       this.onSubmitted,
-      this.allowWithErrors = false});
+      this.allowWithErrors = false}) {
+    for (final field in fields) {
+      /// as radio buttons share a single valuefield we have to
+      /// ensure only to create one field for a given valueKey therefore the
+      /// ??=
+      values[field.valueKey] ??= _FieldValue(
+          initialValue: field.initialValue, isMandatory: field.mandatory);
+    }
+  }
 
   /// Called when the form is changed
   final FormResultsCallback onChanged;
@@ -57,16 +66,16 @@ class QuickFormController extends ChangeNotifier {
   final Map<String, FocusNode> focusNodes;
 
   /// All the values
-  final Map<String, String> values = {};
+  final Map<String, _FieldValue> values = {};
 
   /// A count of validation errors
   int get validationErrors => fields.fold(
       0,
-      (sum, field) =>
-          compositeValidator(field.validators, this, getValue(field.name)) ==
-                  null
-              ? sum
-              : sum + 1);
+      (sum, field) => compositeValidator(
+                  field.validators, this, getValue(field.valueKey)) ==
+              null
+          ? sum
+          : sum + 1);
 
   /// A count of how many fields are still required
   int get stillRequired => fields.fold(
@@ -144,7 +153,7 @@ class QuickFormController extends ChangeNotifier {
   /// Used when user taps "submit" without completing the form
   void _focusOnFirstRemaining() {
     final field = fields.firstWhere(
-        (field) => field.mandatory && (getValue(field.name)?.isEmpty ?? true));
+        (field) => field.mandatory && (values[field.name]?.isEmpty ?? true));
     if (field != null) {
       getFocusNode(field.name).requestFocus();
     }
@@ -176,8 +185,8 @@ class QuickFormController extends ChangeNotifier {
       controllers[name];
 
   /// Called every time a value is changed
-  void onChange(String name, String value) {
-    values[name] = value;
+  void onChange(String name, Object value) {
+    values[name].value = value;
     if (onChanged != null) {
       /// Todo allow errors
       if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
@@ -191,7 +200,7 @@ class QuickFormController extends ChangeNotifier {
     final spec = getFieldSpec(name);
     final idx = _getFieldSpecIndex(spec);
     if (spec is FieldText) {
-      values[name] = getTextEditingController(name).text;
+      values[name].value = getTextEditingController(name).text;
     }
 
     if (idx + 1 < fields.length) {
@@ -205,38 +214,7 @@ class QuickFormController extends ChangeNotifier {
   /// Gets the current value for a field by name
   /// Radio buttons get value by Group name
   /// and default to a value = to the first option listed
-  String getValue(String name) {
-    final field = getFieldSpec(name);
-
-    if (field is FieldRadioButton) {
-      if (values.containsKey(field.group)) {
-        return values[field.group];
-      } else {
-        return getRadioDefaultValue(field.group);
-      }
-    }
-
-    return values[field.name];
-  }
-
-  String getRadioDefaultValue(String group) => (fields.firstWhere((element) =>
-              element is FieldRadioButton && element.group == group)
-          as FieldRadioButton)
-      .value;
-
-  void applyRadioValue(String name, String value) =>
-      onChange((getFieldSpec(name) as FieldRadioButton).group, value);
-
-  void toggleCheckbox(String name) {
-    if (values.containsKey(name)) {
-      values.remove(name);
-    } else {
-      values[name] = getFieldSpec(name).value as String;
-    }
-    notifyListeners();
-  }
-
-  bool isChecked(String name) => values.containsKey(name);
+  Object getValue(String name) => values[name].value;
 }
 
 /// Extensions on List<String> to help with building the ultimate simple form
@@ -267,4 +245,35 @@ extension FormHelperFieldListExtension on List<FieldBase> {
           onFormChanged: onFormChanged,
           onFormSubmitted: onFormSubmitted,
           form: this);
+}
+
+class _FieldValue {
+  _FieldValue({Object initialValue, this.isMandatory}) : _value = initialValue;
+
+  Object get value => _value;
+  set value(Object v) {
+    _value = v;
+    hasChanged = true;
+  }
+
+  final bool isMandatory;
+  bool hasChanged = false;
+  Object _value;
+
+  String errorMessage;
+
+  bool get isEmpty {
+    if (_value == null) {
+      return true;
+    }
+    if (_value is String) {
+      return (_value as String).isEmpty;
+    }
+    return false;
+  }
+
+  void clear() {
+    _value = null;
+    hasChanged = false;
+  }
 }

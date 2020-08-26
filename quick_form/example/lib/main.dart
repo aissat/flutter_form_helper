@@ -57,7 +57,7 @@ class _FormTestAppState extends State<FormTestApp>
                 child: Column(
               children: <Widget>[
                 TabBar(
-                  onTap: (_) => setChangedString(null),
+                  // onTap: (_) => setChangedString(null),
                   labelColor: Theme.of(context).colorScheme.primary,
                   controller: controller,
                   tabs: const <Widget>[
@@ -96,7 +96,7 @@ class _FormTestAppState extends State<FormTestApp>
 /// Form Results Callback
 ///
 /// Show the results in a Dialog
-void resultsCallback(Map<String, String> results) => showDialog<void>(
+void resultsCallback(Map<String, Object> results) => showDialog<void>(
     context: _scaffoldKey.currentContext,
     builder: (context) => Padding(
           padding: const EdgeInsets.all(64),

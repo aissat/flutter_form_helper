@@ -5,8 +5,8 @@ import '../quick_form.dart';
 /// Composes and folds together multiple validators
 /// Applies the list of Validators in order
 String compositeValidator(
-        List<Validator> validators, QuickFormController helper, String input) =>
-    input != null && input.isNotEmpty
+        List<Validator> validators, QuickFormController helper, Object input) =>
+    input != null && (input is String && input.isNotEmpty)
         ? validators.fold(
             null, (output, v) => v(helper, input, defaultOutput: output))
         : null;
