@@ -18,10 +18,11 @@ class QuickFormController extends ChangeNotifier {
       values[field.valueKey] ??= _FieldState(
           fieldName: field.name,
           initialValue: field.initialValue,
-          isMandatory: field.mandatory);
+          isMandatory: field.mandatory,
+          validators: field.validators);
       final node = FocusNode();
       if (field.validateOnLostFocus) {
-        node.addListener(() => _onFocusNodeChange(field.name, node));
+        node.addListener(() => _onFocusNodeChange(field, node));
       }
       focusNodes[field.name] = node;
     }
@@ -50,20 +51,14 @@ class QuickFormController extends ChangeNotifier {
   final Map<String, _FieldState> values = {};
 
   /// A count of validation errors
-  int get validationErrors => fields.fold(
-      0,
-      (sum, field) => compositeValidator(
-                  field.validators, this, getRawValue(field.valueKey)) ==
-              null
-          ? sum
-          : sum + 1);
+  int get validationErrors => values.values.fold(
+      0, (sum, fieldState) => fieldState.hasValidationError ? sum + 1 : sum);
 
   /// A count of how many fields are still required
-  int get stillRequired => fields.fold(
+  int get stillRequired => values.values.fold(
       0,
-      (sum, field) => field.mandatory
-          ? values[field.valueKey]?.isEmpty ?? false ? sum + 1 : sum
-          : sum);
+      (sum, fieldState) =>
+          fieldState.isMandatory ? fieldState.isEmpty ? sum + 1 : sum : sum);
 
   /// Dispose this form
   @override
@@ -85,6 +80,8 @@ class QuickFormController extends ChangeNotifier {
   /// It'll redirect you to required fields or to fix errors
   /// before submitting
   void submitForm() {
+    values.values.forEach(_validateFieldState);
+
     if (allowWithErrors && onSubmitted != null) {
       onSubmitted(values.map((k, v) => MapEntry(k, v.toFieldValue())));
       return;
@@ -147,10 +144,10 @@ class QuickFormController extends ChangeNotifier {
   /// "submit" is a special case
   Widget getWidget(String name) => _getFieldSpec(name).buildWidget(this);
 
-  void _onFocusNodeChange(String fieldName, FocusNode node) {
+  void _onFocusNodeChange(FieldBase field, FocusNode node) {
     if (!node.hasFocus) {
       if (!onlyValidateOnSubmit) {
-        _validateField(fieldName);
+        _validateFieldState(values[field.valueKey]);
       }
       if (onChanged != null) {
         /// Todo allow errors
@@ -161,18 +158,20 @@ class QuickFormController extends ChangeNotifier {
     }
   }
 
-  bool _validateField(String valueKey) {
-    final valueField = values[valueKey];
-    final spec = _getFieldSpec(valueKey);
-    valueField.errorMessage =
-        compositeValidator(spec.validators, this, valueField._rawValue);
-    if (valueField.errorMessage != null) {
-      values[valueKey].validateOnEachChange = true;
+  bool _validateFieldState(_FieldState fieldState) {
+    final spec = _getFieldSpec(fieldState.fieldName);
+
+    fieldState.errorMessage =
+        compositeValidator(spec.validators, this, fieldState._rawValue);
+
+    if (fieldState.hasValidationError) {
+      fieldState.validateOnEachChange = true;
     } else {
-      valueField.value = spec.convert(valueField.rawValue);
+      fieldState.value = spec.convert(fieldState.rawValue);
     }
+
     notifyListeners();
-    return valueField.errorMessage == null;
+    return fieldState.errorMessage == null;
   }
 
   /// Has to be called by the implementing widget
@@ -184,17 +183,17 @@ class QuickFormController extends ChangeNotifier {
     final fieldValue = values[valueKey]..rawValue = value;
 
     if (fieldValue.validateOnEachChange) {
-      _validateField(valueKey);
+      _validateFieldState(values[valueKey]);
     }
   }
 
   /// If the implementing widget supports an submit/done option
   /// it has to call this function
   void onSubmit(String name) {
-    final spec = _getFieldSpec(name);
-    final idx = _getFieldSpecIndex(spec);
+    final field = _getFieldSpec(name);
+    final idx = _getFieldSpecIndex(field);
 
-    if (!_validateField(name) && !onlyValidateOnSubmit) {
+    if (!_validateFieldState(values[field.valueKey]) && !onlyValidateOnSubmit) {
       // if validation fails we keep focus in this field
       getFocusNode(name).requestFocus();
       if (onChanged != null) {
@@ -254,14 +253,22 @@ extension FormHelperFieldListExtension on List<FieldBase> {
 }
 
 class _FieldState {
-  _FieldState({this.fieldName, Object initialValue, this.isMandatory})
-      : _rawValue = initialValue;
+  _FieldState({
+    @required this.fieldName,
+    @required Object initialValue,
+    @required this.isMandatory,
+    @required this.validators,
+  }) : _rawValue = initialValue;
   final String fieldName;
   Object get rawValue => _rawValue;
   set rawValue(Object v) {
     _rawValue = v;
     hasChanged = true;
+    value = null;
+    errorMessage = null;
   }
+
+  final List<Validator> validators;
 
   final bool isMandatory;
   bool hasChanged = false;
@@ -270,6 +277,8 @@ class _FieldState {
   bool validateOnEachChange = false;
 
   String errorMessage;
+
+  bool get hasValidationError => errorMessage != null;
 
   bool get isEmpty {
     if (_rawValue == null) {

@@ -61,9 +61,13 @@ void main() {
     await tester.enterText(find.byKey(const Key("age")), "34");
     await tester.testTextInput.receiveAction(TextInputAction.done);
 
+    await tester.tap(find.byKey(const Key("name")));
+    await tester.enterText(find.byKey(const Key("name")), "Joe");
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+
     await tester.tap(find.byKey(const Key("submit")));
-    expect(onSubmittedMap["age"].value, equals("34"));
-    expect(onSubmittedMap["title"].value, equals("Test Title"));
+    expect(onSubmittedMap["age"]?.value, equals("34"));
+    expect(onSubmittedMap["title"]?.value, equals("Test Title"));
   });
 }
 
