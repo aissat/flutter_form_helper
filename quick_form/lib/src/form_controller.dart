@@ -14,16 +14,13 @@ class QuickFormController extends ChangeNotifier {
       /// as radio buttons share a single valuefield we have to
       /// ensure only to create one field for a given valueKey therefore the
       /// ??=
-      values[field.valueKey] ??= _FieldValue(
-          initialValue: field.initialValue, isMandatory: field.mandatory);
-      if (field is FieldText) {
-        assert(!controllers.containsKey(field.name));
-        controllers[field.name] =
-            TextEditingController(text: field.initialValue);
-      }
+      values[field.valueKey] ??= _FieldState(
+          fieldName: field.name,
+          initialValue: field.initialValue,
+          isMandatory: field.mandatory);
       final node = FocusNode();
       if (field.validateOnLostFocus) {
-        node.addListener(() => onFocusNodeChange(field.name, node));
+        node.addListener(() => _onFocusNodeChange(field.name, node));
       }
       focusNodes[field.name] = node;
     }
@@ -42,20 +39,17 @@ class QuickFormController extends ChangeNotifier {
   /// All the fields
   final List<FieldBase> fields;
 
-  /// All the controllers
-  final Map<String, TextEditingController> controllers = {};
-
   /// All the focus nodes
   final Map<String, FocusNode> focusNodes = {};
 
   /// All the values
-  final Map<String, _FieldValue> values = {};
+  final Map<String, _FieldState> values = {};
 
   /// A count of validation errors
   int get validationErrors => fields.fold(
       0,
       (sum, field) => compositeValidator(
-                  field.validators, this, getValue(field.valueKey)) ==
+                  field.validators, this, getRawValue(field.valueKey)) ==
               null
           ? sum
           : sum + 1);
@@ -64,7 +58,7 @@ class QuickFormController extends ChangeNotifier {
   int get stillRequired => fields.fold(
       0,
       (sum, field) => field.mandatory
-          ? values[field.name]?.isEmpty ?? false ? sum + 1 : sum
+          ? values[field.valueKey]?.isEmpty ?? false ? sum + 1 : sum
           : sum);
 
   /// Returns auto-generated submission button text
@@ -83,9 +77,7 @@ class QuickFormController extends ChangeNotifier {
   /// Dispose this form
   @override
   void dispose() {
-    this
-      ..controllers.forEach((key, value) => value.dispose())
-      ..focusNodes.forEach((key, value) => value.dispose());
+    focusNodes.forEach((key, value) => value.dispose());
     super.dispose();
   }
 
@@ -94,7 +86,7 @@ class QuickFormController extends ChangeNotifier {
           {FormUiBuilder builder = scrollableSimpleForm}) =>
       builder(this, context);
 
-  /// Get's the Widget for a name
+  /// Gets the Widget for a field
   /// "submit" is a special case
   Widget getWidget(String name) {
     if (name == "submit") {
@@ -104,8 +96,11 @@ class QuickFormController extends ChangeNotifier {
           child: Text(submissionButtonText));
     }
 
-    return getFieldSpec(name).buildWidget(this);
+    return _getFieldSpec(name).buildWidget(this);
   }
+
+  /// Gets the label for a field
+  String getLabel(String fieldName) => _getFieldSpec(fieldName).label;
 
   /// Call this when you want to "Submit" the form
   ///
@@ -113,7 +108,7 @@ class QuickFormController extends ChangeNotifier {
   /// before submitting
   void submitForm() {
     if (allowWithErrors && onSubmitted != null) {
-      onSubmitted(values);
+      onSubmitted(values.map((k, v) => MapEntry(k, v.toFieldValue())));
       return;
     }
 
@@ -127,26 +122,9 @@ class QuickFormController extends ChangeNotifier {
     }
 
     if (onSubmitted != null) {
-      onSubmitted(values);
+      onSubmitted(values.map((k, v) => MapEntry(k, v.toFieldValue())));
     }
     notifyListeners();
-  }
-
-  void onFocusNodeChange(String fieldName, FocusNode node) {
-    if (!node.hasFocus) {
-      if (!validateField(fieldName)) {
-        values[fieldName].validateOnEachChange = true;
-      }
-    }
-  }
-
-  bool validateField(String fieldName) {
-    final valueField = values[fieldName];
-    final spec = getFieldSpec(fieldName);
-    valueField.errorMessage =
-        compositeValidator(spec.validators, this, valueField._rawValue);
-    notifyListeners();
-    return valueField.errorMessage == null;
   }
 
   /// Focus on the first remaining mandatory field
@@ -163,7 +141,8 @@ class QuickFormController extends ChangeNotifier {
   /// Used when user taps "submit" with errors detected in input
   void _focusOnFirstError() {
     final field = fields.firstWhere((field) =>
-        compositeValidator(field.validators, this, getValue(field.name)) !=
+        compositeValidator(
+            field.validators, this, getRawValue(field.valueKey)) !=
         null);
     if (field != null) {
       getFocusNode(field.name).requestFocus();
@@ -171,57 +150,91 @@ class QuickFormController extends ChangeNotifier {
   }
 
   /// Gets a field spec
-  FieldBase getFieldSpec(String name) =>
-      fields.firstWhere((element) => element.name == name);
+  FieldBase _getFieldSpec(String fieldName) =>
+      fields.firstWhere((element) => element.name == fieldName);
 
   /// Gets a field spec
   int _getFieldSpecIndex(FieldBase fieldSpec) => fields.indexOf(fieldSpec);
 
   /// Get a focus node for a named field
-  FocusNode getFocusNode(String name) => focusNodes[name];
+  FocusNode getFocusNode(String fieldName) => focusNodes[fieldName];
 
+  /// returns the current validation error of a field
+  /// [valueKey] the key under which the value will be stored
+  /// in the result map. Typically the name of the Field but there can be
+  /// exceptions like RadioButtons that use their Groupname instead
   String getValidationError(String valueKey) => values[valueKey]?.errorMessage;
 
-  /// Get a text editting controller for a name
-  TextEditingController getTextEditingController(String name) =>
-      controllers[name];
-
-  /// Called every time a value is changed
-  void onChange(String name, Object value) {
-    final fieldValue = values[name]..rawValue = value;
-
-    if (fieldValue.validateOnEachChange) {
-      validateField(name);
+  void _onFocusNodeChange(String fieldName, FocusNode node) {
+    if (!node.hasFocus) {
+      _validateField(fieldName);
+      if (onChanged != null) {
+        /// Todo allow errors
+        if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
+          onChanged(values.map((k, v) => MapEntry(k, v.toFieldValue())));
+        }
+      }
     }
-
-    // if (onChanged != null) {
-    //   /// Todo allow errors
-    //   if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
-    //     onChanged(values);
-    //   }
-    // }
-    notifyListeners();
   }
 
-  void onSubmit(String name) {
-    final spec = getFieldSpec(name);
-    final idx = _getFieldSpecIndex(spec);
-    if (spec is FieldText) {
-      values[name].rawValue = getTextEditingController(name).text;
+  bool _validateField(String valueKey) {
+    final valueField = values[valueKey];
+    final spec = _getFieldSpec(valueKey);
+    valueField.errorMessage =
+        compositeValidator(spec.validators, this, valueField._rawValue);
+    if (valueField.errorMessage != null) {
+      values[valueKey].validateOnEachChange = true;
     }
+    notifyListeners();
+    return valueField.errorMessage == null;
+  }
 
-    if (idx + 1 < fields.length) {
-      final nextField = fields[idx + 1];
-      getFocusNode(nextField.name).requestFocus();
+  /// Has to be called by the implementing widget
+  /// every time its value is changed
+  /// [valueKey] the key under which the value will be stored
+  /// in the result map. Typically the name of the Field but there can be
+  /// exceptions like RadioButtons that use their Groupname instead
+  void onChange(String valueKey, Object value) {
+    final fieldValue = values[valueKey]..rawValue = value;
+
+    if (fieldValue.validateOnEachChange) {
+      _validateField(valueKey);
+    }
+  }
+
+  /// If the implementing widget supports an submit/done option
+  /// it has to call this function
+  void onSubmit(String name) {
+    final spec = _getFieldSpec(name);
+    final idx = _getFieldSpecIndex(spec);
+
+    if (!_validateField(name)) {
+      // if validation fails we keep focus in this field
+      getFocusNode(name).requestFocus();
+      if (onChanged != null) {
+        /// Todo allow errors
+        if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
+          onChanged(values.map((k, v) => MapEntry(k, v.toFieldValue())));
+        }
+      }
     } else {
-      getFocusNode(name).unfocus();
+      // move focus to next field
+      if (idx + 1 < fields.length) {
+        final nextField = fields[idx + 1];
+        getFocusNode(nextField.name).requestFocus();
+      } else {
+        getFocusNode(name).unfocus();
+      }
     }
   }
 
   /// Gets the current value for a field by name
   /// Radio buttons get value by Group name
   /// and default to a value = to the first option listed
-  Object getValue(String name) => values[name].rawValue;
+  /// [valueKey] the key under which the value will be stored
+  /// in the result map. Typically the name of the Field but there can be
+  /// exceptions like RadioButtons that use their Groupname instead
+  Object getRawValue(String valueKey) => values[valueKey].rawValue;
 }
 
 /// Extensions on List<String> to help with building the ultimate simple form
@@ -254,10 +267,10 @@ extension FormHelperFieldListExtension on List<FieldBase> {
           formFields: this);
 }
 
-class _FieldValue {
-  _FieldValue({Object initialValue, this.isMandatory})
+class _FieldState {
+  _FieldState({this.fieldName, Object initialValue, this.isMandatory})
       : _rawValue = initialValue;
-
+  final String fieldName;
   Object get rawValue => _rawValue;
   set rawValue(Object v) {
     _rawValue = v;
@@ -288,4 +301,11 @@ class _FieldValue {
     validateOnEachChange = false;
     hasChanged = false;
   }
+
+  FieldValue toFieldValue() => FieldValue(
+      name: fieldName,
+      rawValue: _rawValue,
+      value: value,
+      hasError: errorMessage != null,
+      isEmpty: isEmpty);
 }

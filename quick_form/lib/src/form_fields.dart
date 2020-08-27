@@ -68,7 +68,6 @@ class FieldText extends FieldBase<String> {
         onChanged: (value) => controller.onChange(name, value),
         onFieldSubmitted: (value) => controller.onSubmit(name),
         focusNode: controller.getFocusNode(name),
-        controller: controller.getTextEditingController(name),
         decoration: InputDecoration(
           labelText: mandatory ? "* $label" : label,
           errorText: controller.getValidationError(valueKey),
@@ -105,7 +104,7 @@ class FieldRadioButton extends FieldBase<String> {
   Widget buildWidget(QuickFormController controller) {
     return Radio<String>(
         key: Key(name),
-        groupValue: controller.getValue(valueKey) as String,
+        groupValue: controller.getRawValue(valueKey) as String,
         value: value,
         focusNode: controller.getFocusNode(name),
         onChanged: (value) => controller.onChange(valueKey, value));
@@ -131,6 +130,6 @@ class FieldCheckbox extends FieldBase<bool> {
   Widget buildWidget(QuickFormController controller) => Checkbox(
       key: Key(name),
       focusNode: controller.getFocusNode(name),
-      value: controller.getValue(valueKey) as bool ?? false,
+      value: controller.getRawValue(valueKey) as bool ?? false,
       onChanged: (value) => controller.onChange(valueKey, value));
 }

@@ -54,7 +54,7 @@ const sampleForm = <FieldBase>[
 /// Checks to see if it matches "password"
 String repeatPasswordValidator(QuickFormController helper, String input,
     {String defaultOutput}) {
-  final password = helper.getValue("password");
+  final password = helper.getRawValue("password");
   if (password != input) {
     return "Password do not match";
   } else {
