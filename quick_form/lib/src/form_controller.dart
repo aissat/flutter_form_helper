@@ -65,19 +65,6 @@ class QuickFormController extends ChangeNotifier {
           ? values[field.valueKey]?.isEmpty ?? false ? sum + 1 : sum
           : sum);
 
-  /// Returns auto-generated submission button text
-  /// It'll indicate errors with the form
-  String get submissionButtonText {
-    if (stillRequired > 0) {
-      return "$stillRequired fields remaining";
-    }
-
-    if (validationErrors > 0) {
-      return "$validationErrors field doesn't validate";
-    }
-    return "Submit Form";
-  }
-
   /// Dispose this form
   @override
   void dispose() {
@@ -89,19 +76,6 @@ class QuickFormController extends ChangeNotifier {
   Widget buildForm(BuildContext context,
           {FormUiBuilder builder = scrollableSimpleForm}) =>
       builder(this, context);
-
-  /// Gets the Widget for a field
-  /// "submit" is a special case
-  Widget getWidget(String name) {
-    if (name == "submit") {
-      return RaisedButton(
-          key: const Key("submit"),
-          onPressed: submitForm,
-          child: Text(submissionButtonText));
-    }
-
-    return _getFieldSpec(name).buildWidget(this);
-  }
 
   /// Gets the label for a field
   String getLabel(String fieldName) => _getFieldSpec(fieldName).label;
@@ -169,6 +143,10 @@ class QuickFormController extends ChangeNotifier {
   /// exceptions like RadioButtons that use their Groupname instead
   String getValidationError(String valueKey) => values[valueKey]?.errorMessage;
 
+  /// Gets the Widget for a field
+  /// "submit" is a special case
+  Widget getWidget(String name) => _getFieldSpec(name).buildWidget(this);
+
   void _onFocusNodeChange(String fieldName, FocusNode node) {
     if (!node.hasFocus) {
       if (!onlyValidateOnSubmit) {
@@ -190,6 +168,8 @@ class QuickFormController extends ChangeNotifier {
         compositeValidator(spec.validators, this, valueField._rawValue);
     if (valueField.errorMessage != null) {
       values[valueKey].validateOnEachChange = true;
+    } else {
+      valueField.value = spec.convert(valueField.rawValue);
     }
     notifyListeners();
     return valueField.errorMessage == null;

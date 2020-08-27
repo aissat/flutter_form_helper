@@ -4,21 +4,21 @@ import 'package:quick_form/quick_form.dart';
 
 void main() {
   test("Basic Form Helper Test", () {
-    Map<String, String> results;
+    Map<String, FieldValue> results;
     QuickFormController(
-        spec: [const FieldText(name: "test")],
+        fields: [const FieldText(name: "test")],
         onSubmitted: (map) => results = map)
       ..onChange("test", "value")
       ..submitForm();
 
     expect(results, isNotNull);
-    expect(results["test"], equals("value"));
+    expect(results["test"].value, equals("value"));
   });
 
   test("Basic Form Helper Test with LengthValidator", () {
     /// Test Validation Fail
-    Map<String, String> results;
-    QuickFormController(spec: [
+    Map<String, FieldValue> results;
+    QuickFormController(fields: [
       const FieldText(name: "test", validators: [lengthValidator])
     ], onSubmitted: (map) => results = map)
       ..onChange("test", "va")
@@ -27,7 +27,7 @@ void main() {
     expect(results, isNull);
 
     /// Test validation Pass
-    QuickFormController(spec: [
+    QuickFormController(fields: [
       const FieldText(name: "test", validators: [lengthValidator])
     ], onSubmitted: (map) => results = map)
       ..onChange("test", "value")
@@ -35,11 +35,11 @@ void main() {
 
     //Try again with a correct length, expect callback to work
     expect(results, isNotNull);
-    expect(results["test"], equals("value"));
+    expect(results["test"].value, equals("value"));
   });
 
   testWidgets("Integration Test of the Flutter Form", (tester) async {
-    Map<String, String> onSubmittedMap;
+    Map<String, FieldValue> onSubmittedMap;
     await tester.pumpWidget(
       MaterialApp(
         home: QuickForm(
@@ -62,8 +62,8 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
 
     await tester.tap(find.byKey(const Key("submit")));
-    expect(onSubmittedMap["age"], equals("34"));
-    expect(onSubmittedMap["title"], equals("Test Title"));
+    expect(onSubmittedMap["age"].value, equals("34"));
+    expect(onSubmittedMap["title"].value, equals("Test Title"));
   });
 }
 
@@ -101,6 +101,6 @@ const sampleForm = <FieldBase>[
   ),
   FieldCheckbox(
     name: "checkbox",
-    initialValue: "checked",
+    initialValue: true,
   )
 ];

@@ -88,37 +88,57 @@ class _QuickFormState extends State<QuickForm> {
 }
 
 ///
-/// This is the default "debug" form
+/// This is the default  form
 ///
 /// It can be used to rapidly generate a form, and is the default.
 ///
 /// It's assumed you'll implement your own form however.
 ///
-Widget scrollableSimpleForm(QuickFormController helper, BuildContext context) =>
-    Column(
-      children: <Widget>[
-        Expanded(
-          child: Card(
-            elevation: 0.25,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: helper.fields.map((f) {
-                      if (f is FieldRadioButton) {
-                        return Row(children: <Widget>[
-                          Text("${f.group ?? ""} ${f.label}"),
-                          helper.getWidget(f.name)
-                        ]);
-                      } else {
-                        return helper.getWidget(f.name);
-                      }
-                    }).toList()),
-              ),
+Widget scrollableSimpleForm(
+    QuickFormController controller, BuildContext context) {
+  /// Returns auto-generated submission button text
+  /// It'll indicate errors with the form
+  String getSubmissionButtonText() {
+    final stillRequired = controller.stillRequired;
+    if (stillRequired > 0) {
+      return "$stillRequired fields remaining";
+    }
+
+    final validationErrors = controller.validationErrors;
+    if (validationErrors > 0) {
+      return "$validationErrors field doesn't validate";
+    }
+    return "Submit Form";
+  }
+
+  return Column(
+    children: <Widget>[
+      Expanded(
+        child: Card(
+          elevation: 0.25,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: controller.fields.map((f) {
+                    if (f is FieldRadioButton) {
+                      return Row(children: <Widget>[
+                        Text("${f.group ?? ""} ${f.label}"),
+                        controller.getWidget(f.name)
+                      ]);
+                    } else {
+                      return controller.getWidget(f.name);
+                    }
+                  }).toList()),
             ),
           ),
         ),
-        helper.getWidget("submit")
-      ],
-    );
+      ),
+      RaisedButton(
+          key: const Key("submit"),
+          onPressed: controller.submitForm,
+          child: Text(getSubmissionButtonText())),
+    ],
+  );
+}
