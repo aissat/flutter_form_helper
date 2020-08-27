@@ -25,6 +25,7 @@ const sampleForm = <FieldBase>[
       name: "url", label: "Url", mandatory: false, validators: [urlValidator]),
   FieldText(
       name: "age", label: "Age", mandatory: true, validators: [intValidator]),
+  FieldSpacer(),
   FieldRadioButton(
     initialValue: 'He',
     name: "radio1",

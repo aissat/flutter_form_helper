@@ -12,19 +12,24 @@ class QuickFormController extends ChangeNotifier {
       this.allowWithErrors = false,
       this.onlyValidateOnSubmit = false}) {
     for (final field in fields) {
-      /// as radio buttons share a single `_FieldState` we have to
-      /// ensure only to create one field for a given valueKey therefore the
-      /// ??=
-      values[field.valueKey] ??= _FieldState(
-          fieldName: field.name,
-          initialValue: field.initialValue,
-          isMandatory: field.mandatory,
-          validators: field.validators);
-      final node = FocusNode();
-      if (field.validateOnLostFocus) {
-        node.addListener(() => _onFocusNodeChange(field, node));
+      /// fields that have a `null` value for `valueKey` are only displayed
+      /// and not included in validation and the return value e.g. `FieldSpacer`
+      /// or `FieldLabely`
+      if (field.valueKey != null) {
+        /// as radio buttons share a single `_FieldState` we have to
+        /// ensure only to create one field for a given valueKey therefore the
+        /// ??=
+        values[field.valueKey] ??= _FieldState(
+            fieldName: field.name,
+            initialValue: field.initialValue,
+            isMandatory: field.mandatory,
+            validators: field.validators);
+        final node = FocusNode();
+        if (field.validateOnLostFocus) {
+          node.addListener(() => _onFocusNodeChange(field, node));
+        }
+        focusNodes[field.name] = node;
       }
-      focusNodes[field.name] = node;
     }
   }
 
@@ -116,9 +121,7 @@ class QuickFormController extends ChangeNotifier {
   /// Used when user taps "submit" with errors detected in input
   void _focusOnFirstError() {
     final field = fields.firstWhere((field) =>
-        compositeValidator(
-            field.validators, this, getRawValue(field.valueKey)) !=
-        null);
+        field.valueKey != null && values[field.valueKey].hasValidationError);
     if (field != null) {
       getFocusNode(field.name).requestFocus();
     }
@@ -126,7 +129,8 @@ class QuickFormController extends ChangeNotifier {
 
   /// Gets a field spec
   FieldBase _getFieldSpec(String fieldName) =>
-      fields.firstWhere((element) => element.name == fieldName);
+      fields.firstWhere((element) => element.name == fieldName,
+          orElse: () => throw Exception('Unknown field name "$fieldName"'));
 
   /// Gets a field spec
   int _getFieldSpecIndex(FieldBase fieldSpec) => fields.indexOf(fieldSpec);
