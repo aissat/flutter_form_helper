@@ -9,9 +9,10 @@ class QuickFormController extends ChangeNotifier {
       {@required this.fields,
       this.onChanged,
       this.onSubmitted,
-      this.allowWithErrors = false}) {
+      this.allowWithErrors = false,
+      this.onlyValidateOnSubmit = false}) {
     for (final field in fields) {
-      /// as radio buttons share a single valuefield we have to
+      /// as radio buttons share a single `_FieldState` we have to
       /// ensure only to create one field for a given valueKey therefore the
       /// ??=
       values[field.valueKey] ??= _FieldState(
@@ -25,6 +26,9 @@ class QuickFormController extends ChangeNotifier {
       focusNodes[field.name] = node;
     }
   }
+
+  /// if true field validation will only be done on submission of the Form
+  final bool onlyValidateOnSubmit;
 
   /// Called when the form is changed
   final FormResultsCallback onChanged;
@@ -167,7 +171,9 @@ class QuickFormController extends ChangeNotifier {
 
   void _onFocusNodeChange(String fieldName, FocusNode node) {
     if (!node.hasFocus) {
-      _validateField(fieldName);
+      if (!onlyValidateOnSubmit) {
+        _validateField(fieldName);
+      }
       if (onChanged != null) {
         /// Todo allow errors
         if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
@@ -208,7 +214,7 @@ class QuickFormController extends ChangeNotifier {
     final spec = _getFieldSpec(name);
     final idx = _getFieldSpecIndex(spec);
 
-    if (!_validateField(name)) {
+    if (!_validateField(name) && !onlyValidateOnSubmit) {
       // if validation fails we keep focus in this field
       getFocusNode(name).requestFocus();
       if (onChanged != null) {

@@ -20,7 +20,8 @@ class QuickForm extends StatefulWidget {
       Key key,
       this.uiBuilder = scrollableSimpleForm,
       this.onFormChanged,
-      this.onFormSubmitted})
+      this.onFormSubmitted,
+      this.onlyValidateOnSubmit = false})
       : controller = null,
         super(key: key);
 
@@ -28,10 +29,14 @@ class QuickForm extends StatefulWidget {
     @required this.controller,
     Key key,
     this.uiBuilder = scrollableSimpleForm,
-  })  : onFormChanged = null,
+  })  : onlyValidateOnSubmit = null,
+        onFormChanged = null,
         onFormSubmitted = null,
         formFields = null,
         super(key: key);
+
+  /// if true field validation will only be done on submission of the Form
+  final bool onlyValidateOnSubmit;
 
   final QuickFormController controller;
 
