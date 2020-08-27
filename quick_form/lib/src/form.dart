@@ -16,7 +16,7 @@ class QuickForm extends StatefulWidget {
   /// form = List of fields
   /// uiBuilder = builds the ui
   const QuickForm(
-      {@required this.form,
+      {@required this.formFields,
       Key key,
       this.uiBuilder = scrollableSimpleForm,
       this.onFormChanged,
@@ -30,13 +30,13 @@ class QuickForm extends StatefulWidget {
     this.uiBuilder = scrollableSimpleForm,
   })  : onFormChanged = null,
         onFormSubmitted = null,
-        form = null,
+        formFields = null,
         super(key: key);
 
   final QuickFormController controller;
 
   /// The list of fields in order of focus/drawing
-  final List<FieldBase> form;
+  final List<FieldBase> formFields;
 
   /// A builder for the UI, scrollable SimpleForm to start
   final FormUiBuilder uiBuilder;
@@ -58,7 +58,7 @@ class _QuickFormState extends State<QuickForm> {
   void initState() {
     controller = widget.controller ??
         QuickFormController(
-            spec: widget.form,
+            fields: widget.formFields,
             onChanged: widget.onFormChanged,
             onSubmitted: widget.onFormSubmitted)
       ..addListener(_refresh);

@@ -5,35 +5,8 @@ import '../quick_form.dart';
 /// Specifies a Form
 class QuickFormController extends ChangeNotifier {
   /// Construct a FormHelper
-  factory QuickFormController(
-          {List<FieldBase> spec,
-          FormResultsCallback onChanged,
-          FormResultsCallback onSubmitted}) =>
-      QuickFormController._(
-          onChanged: onChanged,
-          onSubmitted: onSubmitted,
-          controllers: spec.fold(
-            <String, TextEditingController>{},
-            (map, field) {
-              if (field is FieldText) {
-                assert(!map.containsKey(field.name));
-                map[field.name] =
-                    TextEditingController(text: field.initialValue);
-              }
-              return map;
-            },
-          ),
-          focusNodes: spec.fold(<String, FocusNode>{}, (map, field) {
-            map[field.name] = FocusNode();
-            return map;
-          }),
-          fields: spec);
-
-  /// Private Constructor - Init from Factory
-  QuickFormController._(
+  QuickFormController(
       {@required this.fields,
-      @required this.controllers,
-      @required this.focusNodes,
       this.onChanged,
       this.onSubmitted,
       this.allowWithErrors = false}) {
@@ -43,6 +16,16 @@ class QuickFormController extends ChangeNotifier {
       /// ??=
       values[field.valueKey] ??= _FieldValue(
           initialValue: field.initialValue, isMandatory: field.mandatory);
+      if (field is FieldText) {
+        assert(!controllers.containsKey(field.name));
+        controllers[field.name] =
+            TextEditingController(text: field.initialValue);
+      }
+      final node = FocusNode();
+      if (field.validateOnLostFocus) {
+        node.addListener(() => onFocusNodeChange(field.name, node));
+      }
+      focusNodes[field.name] = node;
     }
   }
 
@@ -60,10 +43,10 @@ class QuickFormController extends ChangeNotifier {
   final List<FieldBase> fields;
 
   /// All the controllers
-  final Map<String, TextEditingController> controllers;
+  final Map<String, TextEditingController> controllers = {};
 
   /// All the focus nodes
-  final Map<String, FocusNode> focusNodes;
+  final Map<String, FocusNode> focusNodes = {};
 
   /// All the values
   final Map<String, _FieldValue> values = {};
@@ -149,6 +132,23 @@ class QuickFormController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void onFocusNodeChange(String fieldName, FocusNode node) {
+    if (!node.hasFocus) {
+      if (!validateField(fieldName)) {
+        values[fieldName].validateOnEachChange = true;
+      }
+    }
+  }
+
+  bool validateField(String fieldName) {
+    final valueField = values[fieldName];
+    final spec = getFieldSpec(fieldName);
+    valueField.errorMessage =
+        compositeValidator(spec.validators, this, valueField._rawValue);
+    notifyListeners();
+    return valueField.errorMessage == null;
+  }
+
   /// Focus on the first remaining mandatory field
   /// Used when user taps "submit" without completing the form
   void _focusOnFirstRemaining() {
@@ -180,19 +180,26 @@ class QuickFormController extends ChangeNotifier {
   /// Get a focus node for a named field
   FocusNode getFocusNode(String name) => focusNodes[name];
 
+  String getValidationError(String valueKey) => values[valueKey]?.errorMessage;
+
   /// Get a text editting controller for a name
   TextEditingController getTextEditingController(String name) =>
       controllers[name];
 
   /// Called every time a value is changed
   void onChange(String name, Object value) {
-    values[name].value = value;
-    if (onChanged != null) {
-      /// Todo allow errors
-      if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
-        onChanged(values);
-      }
+    final fieldValue = values[name]..rawValue = value;
+
+    if (fieldValue.validateOnEachChange) {
+      validateField(name);
     }
+
+    // if (onChanged != null) {
+    //   /// Todo allow errors
+    //   if (allowWithErrors || (validationErrors == 0 && stillRequired == 0)) {
+    //     onChanged(values);
+    //   }
+    // }
     notifyListeners();
   }
 
@@ -200,7 +207,7 @@ class QuickFormController extends ChangeNotifier {
     final spec = getFieldSpec(name);
     final idx = _getFieldSpecIndex(spec);
     if (spec is FieldText) {
-      values[name].value = getTextEditingController(name).text;
+      values[name].rawValue = getTextEditingController(name).text;
     }
 
     if (idx + 1 < fields.length) {
@@ -214,7 +221,7 @@ class QuickFormController extends ChangeNotifier {
   /// Gets the current value for a field by name
   /// Radio buttons get value by Group name
   /// and default to a value = to the first option listed
-  Object getValue(String name) => values[name].value;
+  Object getValue(String name) => values[name].rawValue;
 }
 
 /// Extensions on List<String> to help with building the ultimate simple form
@@ -229,7 +236,7 @@ extension FormHelperStringListExtension on List<String> {
       QuickForm(
           onFormChanged: onFormChanged,
           onFormSubmitted: onFormSubmitted,
-          form: map((string) => FieldText(name: string)).toList());
+          formFields: map((string) => FieldText(name: string)).toList());
 }
 
 /// Extensions on List<Field> to help with building the ultimate simple form
@@ -244,36 +251,41 @@ extension FormHelperFieldListExtension on List<FieldBase> {
           uiBuilder: uiBuilder,
           onFormChanged: onFormChanged,
           onFormSubmitted: onFormSubmitted,
-          form: this);
+          formFields: this);
 }
 
 class _FieldValue {
-  _FieldValue({Object initialValue, this.isMandatory}) : _value = initialValue;
+  _FieldValue({Object initialValue, this.isMandatory})
+      : _rawValue = initialValue;
 
-  Object get value => _value;
-  set value(Object v) {
-    _value = v;
+  Object get rawValue => _rawValue;
+  set rawValue(Object v) {
+    _rawValue = v;
     hasChanged = true;
   }
 
   final bool isMandatory;
   bool hasChanged = false;
-  Object _value;
+  Object _rawValue;
+  Object value;
+  bool validateOnEachChange = false;
 
   String errorMessage;
 
   bool get isEmpty {
-    if (_value == null) {
+    if (_rawValue == null) {
       return true;
     }
-    if (_value is String) {
-      return (_value as String).isEmpty;
+    if (_rawValue is String) {
+      return (_rawValue as String).isEmpty;
     }
     return false;
   }
 
   void clear() {
-    _value = null;
+    _rawValue = null;
+    value = null;
+    validateOnEachChange = false;
     hasChanged = false;
   }
 }

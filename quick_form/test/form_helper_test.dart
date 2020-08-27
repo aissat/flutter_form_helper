@@ -43,7 +43,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: QuickForm(
-          form: sampleForm,
+          formFields: sampleForm,
           onFormSubmitted: (map) => onSubmittedMap = map,
         ),
       ),

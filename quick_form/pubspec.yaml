@@ -8,6 +8,7 @@ environment:
   sdk: ">=2.6.0 <3.0.0"
 
 dependencies:
+  functional_listener: any
   flutter:
     sdk: flutter
 

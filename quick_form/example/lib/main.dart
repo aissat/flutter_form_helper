@@ -71,7 +71,7 @@ class _FormTestAppState extends State<FormTestApp>
                         TabBarView(controller: controller, children: <Widget>[
                   /// Simple Form Builder Widget with default UI
                   QuickForm(
-                      form: sampleForm,
+                      formFields: sampleForm,
                       onFormSubmitted: resultsCallback,
                       onFormChanged: (map) => setChangedString(map.toString())),
 
