@@ -40,20 +40,3 @@ typedef FormUiBuilder = Widget Function(
 ///
 /// This function is used to return the results of the form to the callbacks
 typedef FormResultsCallback = Function(Map<String, FieldValue> results);
-
-///
-/// This is a Validator.
-///
-/// The General philosphy is as follows
-/// - helper gives access to all fields in form
-/// - input is the current fields value
-/// - return a String with an error when failing validation
-/// - return defaultOutput on validation pass (null if not provided).
-///
-/// We pass the output through so the validators can fold them together
-/// to an output.
-///
-/// e.g. permitBlank can clear a length validation error put before it
-/// so a field can be blank, but require X characters if you do type.
-typedef Validator = String Function(QuickFormController helper, String input,
-    {String defaultOutput});

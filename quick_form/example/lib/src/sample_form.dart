@@ -1,51 +1,52 @@
 import 'package:quick_form/quick_form.dart';
 
 /// This is the Sample Form used on the main() page
-const sampleForm = <FieldBase>[
-  FieldText(
-      name: "name",
-      label: "Name",
-      mandatory: true,
-      validators: [lengthValidator]),
-  FieldText(name: "title", label: "Title", mandatory: false),
-  FieldText(
+final sampleForm = <FieldBase>[
+  FieldText(name: "name", label: "Name", mandatory: true, validators: [
+    const LengthValidator(stopValidating: false),
+    PatternValidator.exclude(exclude: 'i')
+  ]),
+  const FieldText(name: "title", label: "Title", mandatory: false),
+  const FieldText(
       name: "password", label: "Password", mandatory: false, obscureText: true),
-  FieldText(
+  const FieldText(
       name: "repeat_password",
       label: "Repeat Password",
-      validators: [repeatPasswordValidator],
+      //validators: [repeatPasswordValidator],
       mandatory: false,
       obscureText: true),
   FieldText(
       name: "email",
       label: "Email",
       mandatory: false,
-      validators: [emailValidator]),
+      validators: [PatternValidator.forEmail()]),
   FieldText(
-      name: "url", label: "Url", mandatory: false, validators: [urlValidator]),
-  FieldText(
-      name: "age", label: "Age", mandatory: true, validators: [intValidator]),
-  FieldSpacer(),
-  FieldRadioButton(
+      name: "url",
+      label: "Url",
+      mandatory: false,
+      validators: [PatternValidator.forUrl()]),
+  const FieldText(name: "age", label: "Age", mandatory: true, validators: []),
+  const FieldSpacer(),
+  const FieldRadioButton(
     initialValue: 'He',
     name: "radio1",
     group: "Pronoun",
     value: "He",
     label: "He",
   ),
-  FieldRadioButton(
+  const FieldRadioButton(
     name: "radio2",
     group: "Pronoun",
     value: "She",
     label: "She",
   ),
-  FieldRadioButton(
+  const FieldRadioButton(
     name: "radio3",
     group: "Pronoun",
     value: "Unspecified",
     label: "Unspecified",
   ),
-  FieldCheckbox(
+  const FieldCheckbox(
     name: "checkbox",
     initialValue: true,
   )

@@ -3,35 +3,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:quick_form/quick_form.dart';
 
 void main() {
-  test("Basic Form Helper Test", () {
+  test("Basic Form Helper Test", () async {
     Map<String, FieldValue> results;
-    QuickFormController(
+    final controller = QuickFormController(
         fields: [const FieldText(name: "test")],
         onSubmitted: (map) => results = map)
-      ..onChange("test", "value")
-      ..submitForm();
+      ..onChange("test", "value");
+    await controller.submitForm();
 
     expect(results, isNotNull);
     expect(results["test"].value, equals("value"));
   });
 
-  test("Basic Form Helper Test with LengthValidator", () {
+  test("Basic Form Helper Test with LengthValidator", () async {
     /// Test Validation Fail
     Map<String, FieldValue> results;
-    QuickFormController(fields: [
-      const FieldText(name: "test", validators: [lengthValidator])
+    final controller = QuickFormController(fields: [
+      const FieldText(name: "test", validators: [LengthValidator()])
     ], onSubmitted: (map) => results = map)
-      ..onChange("test", "va")
-      ..submitForm();
+      ..onChange("test", "va");
+    await controller.submitForm();
 
     expect(results, isNull);
 
     /// Test validation Pass
-    QuickFormController(fields: [
-      const FieldText(name: "test", validators: [lengthValidator])
+    final controller2 = QuickFormController(fields: [
+      const FieldText(name: "test", validators: [LengthValidator()])
     ], onSubmitted: (map) => results = map)
-      ..onChange("test", "value")
-      ..submitForm();
+      ..onChange("test", "value");
+    await controller2.submitForm();
 
     //Try again with a correct length, expect callback to work
     expect(results, isNotNull);
@@ -65,45 +65,53 @@ void main() {
     await tester.enterText(find.byKey(const Key("name")), "Joe");
     await tester.testTextInput.receiveAction(TextInputAction.done);
 
+    await tester.tap(find.byKey(const Key("email")));
+    await tester.enterText(find.byKey(const Key("email")), "Joe@x.de");
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+
     await tester.tap(find.byKey(const Key("submit")));
+
+    await tester.pump();
     expect(onSubmittedMap["age"]?.value, equals("34"));
     expect(onSubmittedMap["title"]?.value, equals("Test Title"));
   });
 }
 
 /// This is the Sample Form used on the main() page
-const sampleForm = <FieldBase>[
-  FieldText(
+final sampleForm = <FieldBase>[
+  const FieldText(
       name: "name",
       label: "Name",
       mandatory: true,
-      validators: [lengthValidator]),
-  FieldText(name: "title", label: "Title", mandatory: false),
+      validators: [LengthValidator()]),
+  const FieldText(name: "title", label: "Title", mandatory: false),
   FieldText(
       name: "email",
       label: "Email",
       mandatory: false,
-      validators: [emailValidator]),
+      validators: [PatternValidator.forEmail()]),
   FieldText(
-      name: "url", label: "Url", mandatory: false, validators: [urlValidator]),
-  FieldText(
-      name: "age", label: "Age", mandatory: true, validators: [intValidator]),
-  FieldRadioButton(
+      name: "url",
+      label: "Url",
+      mandatory: false,
+      validators: [PatternValidator.forUrl()]),
+  const FieldText(name: "age", label: "Age", mandatory: true, validators: []),
+  const FieldRadioButton(
     name: "radio1",
     group: "Pronoun",
     value: "He",
   ),
-  FieldRadioButton(
+  const FieldRadioButton(
     name: "radio2",
     group: "Pronoun",
     value: "She",
   ),
-  FieldRadioButton(
+  const FieldRadioButton(
     name: "radio3",
     group: "Pronoun",
     value: "Unspecified",
   ),
-  FieldCheckbox(
+  const FieldCheckbox(
     name: "checkbox",
     initialValue: true,
   )

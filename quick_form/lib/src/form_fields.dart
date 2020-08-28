@@ -8,6 +8,7 @@ abstract class FieldBase<T> {
   /// Build a FieldSpec
   const FieldBase({
     @required this.name, // Name of this field
+    this.rawValidators = const [], // A list of validators for raw values
     this.validators = const [], // A list of validators
     this.mandatory = false, // Is this field mandatory?
     this.initialValue, // Default Value
@@ -34,8 +35,11 @@ abstract class FieldBase<T> {
   final T initialValue;
 
   /// The Validator for this field
-  /// Null if OK
-  /// Text if Error
+  /// field validation is a two step process
+  /// [rawValidators] are applied to the unconverted content of a FormField
+  /// [validators] are applied after rawValitators passed successfully and the
+  /// FormField's value was converted to its final type.
+  final List<Validator> rawValidators;
   final List<Validator> validators;
 
   /// If the field should already be validated when loosing focus

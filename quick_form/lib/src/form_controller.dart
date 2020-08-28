@@ -10,7 +10,8 @@ class QuickFormController extends ChangeNotifier {
       this.onChanged,
       this.onSubmitted,
       this.allowWithErrors = false,
-      this.onlyValidateOnSubmit = false}) {
+      this.onlyValidateOnSubmit = false,
+      this.mandatoryFieldMessage = 'This field is mandatory!'}) {
     for (final field in fields) {
       /// fields that have a `null` value for `valueKey` are only displayed
       /// and not included in validation and the return value e.g. `FieldSpacer`
@@ -20,10 +21,10 @@ class QuickFormController extends ChangeNotifier {
         /// ensure only to create one field for a given valueKey therefore the
         /// ??=
         values[field.valueKey] ??= _FieldState(
-            fieldName: field.name,
-            initialValue: field.initialValue,
-            isMandatory: field.mandatory,
-            validators: field.validators);
+          fieldName: field.name,
+          initialValue: field.initialValue,
+          isMandatory: field.mandatory,
+        );
         final node = FocusNode();
         if (field.validateOnLostFocus) {
           node.addListener(() => _onFocusNodeChange(field, node));
@@ -35,6 +36,12 @@ class QuickFormController extends ChangeNotifier {
 
   /// if true field validation will only be done on submission of the Form
   final bool onlyValidateOnSubmit;
+
+  /// Error message that is displayed for an empty mandatory field when
+  /// validating the form on submit.
+  /// if `null`, no error message is displayed but the field is still considered
+  /// not validated and counted in [stillRequired]
+  final String mandatoryFieldMessage;
 
   /// Called when the form is changed
   final FormResultsCallback onChanged;
@@ -84,8 +91,13 @@ class QuickFormController extends ChangeNotifier {
   ///
   /// It'll redirect you to required fields or to fix errors
   /// before submitting
-  void submitForm() {
-    values.values.forEach(_validateFieldState);
+  Future submitForm() async {
+    for (final fieldState in values.values) {
+      await _validateFieldState(
+        fieldState,
+        markEmptyMandatoryFields: true,
+      );
+    }
 
     if (allowWithErrors && onSubmitted != null) {
       onSubmitted(values.map((k, v) => MapEntry(k, v.toFieldValue())));
@@ -148,10 +160,10 @@ class QuickFormController extends ChangeNotifier {
   /// "submit" is a special case
   Widget getWidget(String name) => _getFieldSpec(name).buildWidget(this);
 
-  void _onFocusNodeChange(FieldBase field, FocusNode node) {
+  Future<void> _onFocusNodeChange(FieldBase field, FocusNode node) async {
     if (!node.hasFocus) {
       if (!onlyValidateOnSubmit) {
-        _validateFieldState(values[field.valueKey]);
+        await _validateFieldState(values[field.valueKey]);
       }
       if (onChanged != null) {
         /// Todo allow errors
@@ -162,16 +174,48 @@ class QuickFormController extends ChangeNotifier {
     }
   }
 
-  bool _validateFieldState(_FieldState fieldState) {
-    final spec = _getFieldSpec(fieldState.fieldName);
+  Future<bool> _validateFieldState(
+    _FieldState fieldState, {
+    bool markEmptyMandatoryFields = false,
 
-    fieldState.errorMessage =
-        compositeValidator(spec.validators, this, fieldState._rawValue);
+    ///we only markt these on [submitForm]
+  }) async {
+    if (fieldState.isNotEmpty) {
+      final spec = _getFieldSpec(fieldState.fieldName);
 
+      final errorMessage = StringBuffer();
+      for (final validator in spec.rawValidators) {
+        final result = await validator.validate(this, fieldState._rawValue);
+        errorMessage..write(result.message)..write('\n');
+        if (result.stopValidating) {
+          break;
+        }
+      }
+
+      if (errorMessage.isEmpty) {
+        /// validation of the raw value suceeded so we convert
+        /// and validate the converted value
+        fieldState.value = spec.convert(fieldState.rawValue);
+
+        for (final validator in spec.validators) {
+          final result = await validator.validate(this, fieldState._rawValue);
+          errorMessage..write(result.message)..write('\n');
+          if (result.stopValidating) {
+            break;
+          }
+        }
+      }
+      fieldState.errorMessage =
+          errorMessage.isNotEmpty ? errorMessage.toString() : null;
+    } else {
+      // fieldState is empty
+      fieldState.errorMessage =
+          markEmptyMandatoryFields && fieldState.isMandatory
+              ? mandatoryFieldMessage
+              : null;
+    }
     if (fieldState.hasValidationError) {
       fieldState.validateOnEachChange = true;
-    } else {
-      fieldState.value = spec.convert(fieldState.rawValue);
     }
 
     notifyListeners();
@@ -183,21 +227,25 @@ class QuickFormController extends ChangeNotifier {
   /// [valueKey] the key under which the value will be stored
   /// in the result map. Typically the name of the Field but there can be
   /// exceptions like RadioButtons that use their Groupname instead
-  void onChange(String valueKey, Object value) {
+  Future<void> onChange(String valueKey, Object value) async {
     final fieldValue = values[valueKey]..rawValue = value;
 
     if (fieldValue.validateOnEachChange) {
-      _validateFieldState(values[valueKey]);
+      await _validateFieldState(
+        values[valueKey],
+        markEmptyMandatoryFields: true,
+      );
     }
   }
 
   /// If the implementing widget supports an submit/done option
   /// it has to call this function
-  void onSubmit(String name) {
+  Future<void> onSubmit(String name) async {
     final field = _getFieldSpec(name);
     final idx = _getFieldSpecIndex(field);
 
-    if (!_validateFieldState(values[field.valueKey]) && !onlyValidateOnSubmit) {
+    if (!await _validateFieldState(values[field.valueKey]) &&
+        !onlyValidateOnSubmit) {
       // if validation fails we keep focus in this field
       getFocusNode(name).requestFocus();
       if (onChanged != null) {
@@ -261,7 +309,6 @@ class _FieldState {
     @required this.fieldName,
     @required Object initialValue,
     @required this.isMandatory,
-    @required this.validators,
   }) : _rawValue = initialValue;
   final String fieldName;
   Object get rawValue => _rawValue;
@@ -271,8 +318,6 @@ class _FieldState {
     value = null;
     errorMessage = null;
   }
-
-  final List<Validator> validators;
 
   final bool isMandatory;
   bool hasChanged = false;
@@ -293,6 +338,8 @@ class _FieldState {
     }
     return false;
   }
+
+  bool get isNotEmpty => !isEmpty;
 
   void clear() {
     _rawValue = null;
