@@ -3,10 +3,10 @@ import 'package:quick_form/src/validators.dart';
 
 /// Field Validator Tests
 ///
-/// These validators don't need a FormHelper,
+/// These validators don't need a `QuickFormController`,
 /// hence the nulls
 ///
-/// The form helper is used when a Validator needs to access another field
+/// The controller is used when a Validator needs to access another field
 /// these are all basic validations.
 
 void main() {
