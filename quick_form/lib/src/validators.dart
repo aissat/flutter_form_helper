@@ -7,7 +7,7 @@ import '../quick_form.dart';
 class ValidationResult {
   const ValidationResult(this.message, {this.stopValidating = false});
 
-  factory ValidationResult.validationOk() => const ValidationResult('');
+  factory ValidationResult.validationOk() => const ValidationResult(null);
 
   final String message;
   final bool stopValidating;
@@ -77,7 +77,7 @@ class PatternValidator implements Validator {
 
   factory PatternValidator.forEmail(
           {String errorMessage = 'Invalid email adress'}) =>
-      PatternValidator(_emailPattern, errorMessage);
+      PatternValidator(RegExp(r'[^@]+@.+\.[^.]+'), errorMessage);
 
   factory PatternValidator.forUrl(
           {String errorMessage = 'Invalid URL format'}) =>
@@ -88,7 +88,7 @@ class PatternValidator implements Validator {
     String errorMessage = '"[exclude]" is not allowed',
   }) {
     assert(exclude != null);
-    errorMessage.replaceAll('[exclude]', exclude);
+    errorMessage = errorMessage.replaceAll('[exclude]', exclude);
     return PatternValidator(RegExp('^((?!$exclude).)*\$'), errorMessage);
   }
 
@@ -141,12 +141,3 @@ String intValidator(QuickFormController helper, String input,
 /// Regex Patterns for URL & Email
 final _urlPattern =
     RegExp(r'(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+');
-final _emailPattern = RegExp(
-    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-final _emailPattern2 = RegExp(r"[a-zA-Z0-9\+\.\_\%\-\+]{1,256}"
-    "\@"
-    "[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}"
-    "("
-    "\."
-    "[a-zA-Z0-9][a-zA-Z0-9\-]{0,25}"
-    ")+");

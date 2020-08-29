@@ -186,7 +186,7 @@ class QuickFormController extends ChangeNotifier {
       final errorMessage = StringBuffer();
       for (final validator in spec.rawValidators) {
         final result = await validator.validate(this, fieldState._rawValue);
-        errorMessage..write(result.message)..write('\n');
+        errorMessage..write(result.message ?? '')..write('\n');
         if (result.stopValidating) {
           break;
         }
@@ -199,7 +199,7 @@ class QuickFormController extends ChangeNotifier {
 
         for (final validator in spec.validators) {
           final result = await validator.validate(this, fieldState._rawValue);
-          errorMessage..write(result.message)..write('\n');
+          errorMessage..write(result.message ?? '')..write('\n');
           if (result.stopValidating) {
             break;
           }
